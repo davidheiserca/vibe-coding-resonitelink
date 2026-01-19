@@ -1,0 +1,30 @@
+# Configuration (contains API keys)
+resonite_builder.conf
+
+# Log files
+*.log
+resonite_debug_*.log
+resonite_builder_*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug output
+debug_ai_response.txt
