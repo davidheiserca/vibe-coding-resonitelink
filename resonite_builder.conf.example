@@ -1,0 +1,18 @@
+# ResoniteLink AI World Builder Configuration
+# Copy this file to resonite_builder.conf and fill in your values
+
+# Your Anthropic API key (get one at https://console.anthropic.com/)
+ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+
+# WebSocket URL for ResoniteLink (check Resonite Dashboard -> Sessions after enabling)
+RESONITE_WS_URL=ws://localhost:9000
+
+# Directory for log files (use . for current directory)
+LOG_DIR=.
+
+# AI model to use
+AI_MODEL=claude-sonnet-4-20250514
+
+# Timeout settings (seconds)
+COMMAND_TIMEOUT=10
+CONNECTION_TIMEOUT=10
