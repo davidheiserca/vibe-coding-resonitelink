@@ -1,4 +1,4 @@
-# ResoniteLink AI World Builder
+# ResoniteLink AI Asset Creator
 
 **Version:** 5.0  
 **Date:** January 2026  
@@ -9,7 +9,7 @@
 
 ## Overview
 
-The ResoniteLink AI World Builder is a natural language interface for creating 3D objects and scenes in Resonite VR. Using the ResoniteLink WebSocket protocol and Claude AI, users can describe what they want to build in plain English, and the system translates those requests into actual 3D objects in their Resonite world.
+The ResoniteLink AI Asset Creator is a natural language interface for creating 3D objects and scenes in Resonite VR. Using the ResoniteLink WebSocket protocol and Claude AI, users can describe what they want to build in plain English, and the system translates those requests into actual 3D objects in their Resonite world.
 
 ### What It Does
 
