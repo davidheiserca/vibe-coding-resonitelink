@@ -14,7 +14,7 @@ The ResoniteLink AI World Builder is a natural language interface for creating 3
 ### What It Does
 
 - **Natural Language Building**: Type "Create a red spinning cube" and watch it appear in VR
-- **Multi-Object Scenes**: Build complete scenes like campfires, rooms, and furniture arrangements
+- **Multi-Object Scenes**: Build complete scenes like campfires, rooms, and furniture arrangements (not fully tested)
 - **Automatic Materials**: Objects appear with proper colors and textures
 - **Metadata Tracking**: All created objects include attribution and licensing information
 - **Comprehensive Logging**: Full debug logs and JSON export for troubleshooting
