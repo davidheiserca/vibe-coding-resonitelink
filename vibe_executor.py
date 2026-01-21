@@ -187,7 +187,7 @@ RULES:
 9. No floating parts: if anything is above Y=0.1, it must have explicit supports
 10. For repeated elements (trees, lamps, etc.), cap each cluster at 3 items
 11. Floor plates must sit flush on their support (no gaps). If on slab at Y=0, floor bottom must be Y=0.
-12. Bridges must be clear-span between buildings (no intersections with walls); place bridge decks offset outward from facades.
+12. Bridges must be clear-span without intersecting other geometry; if between buildings, offset decks outward from facades, and if over terrain/water, add piers/supports to the ground.
 
 Respond with ONLY a JSON object. Do NOT wrap in code fences.
 '''
@@ -800,6 +800,12 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
             
             except Exception as e:
                 self.logger.log_error(f"Command execution error: {e}")
+
+        # Post-pass: group moving parts under spinner/wiggler/wobbler slots
+        try:
+            await self._reparent_motion_groups(commands)
+        except Exception as e:
+            self.logger.log_warning(f"Motion grouping failed: {e}")
     
     def _parse_json_response(self, content):
         """Parse JSON from AI response.
@@ -929,6 +935,72 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
     def _resolve_id(self, placeholder):
         """Resolve placeholder to real ID."""
         return self.client.resolve_id(placeholder)
+
+    def _collect_slots(self, commands):
+        """Collect slot metadata from command list."""
+        slots = {}
+        for cmd in commands:
+            if cmd.get("cmd") != "addSlot":
+                continue
+            slot_id = cmd.get("id")
+            if not slot_id:
+                continue
+            slots[slot_id] = {
+                "name": cmd.get("name", ""),
+                "parent": cmd.get("parent"),
+            }
+        return slots
+
+    def _collect_motion_controllers(self, commands):
+        """Collect slots that have spinner/wiggler/wobbler components."""
+        motion_slots = set()
+        for cmd in commands:
+            if cmd.get("cmd") != "addComponent":
+                continue
+            comp_type = cmd.get("type", "") or ""
+            if comp_type.endswith("Spinner") or comp_type.endswith("Wiggler") or comp_type.endswith("Wobbler"):
+                slot_id = cmd.get("slot")
+                if slot_id:
+                    motion_slots.add(slot_id)
+        return motion_slots
+
+    def _is_motion_candidate(self, name):
+        if not name:
+            return False
+        lower = name.lower()
+        keywords = [
+            "blade", "fan", "rotor", "prop", "propeller", "windmill",
+            "spotlight", "lightbeam", "beam", "antenna", "dish", "arm",
+            "turret", "radar", "vane"
+        ]
+        return any(keyword in lower for keyword in keywords)
+
+    async def _reparent_motion_groups(self, commands):
+        """Reparent motion-related slots under the slot with the motion component."""
+        slots = self._collect_slots(commands)
+        motion_slots = self._collect_motion_controllers(commands)
+        if not motion_slots:
+            return
+        
+        for motion_slot in motion_slots:
+            motion_parent = slots.get(motion_slot, {}).get("parent")
+            if not motion_parent:
+                continue
+            candidates = [
+                slot_id for slot_id, meta in slots.items()
+                if slot_id != motion_slot
+                and meta.get("parent") == motion_parent
+                and self._is_motion_candidate(meta.get("name", ""))
+            ]
+            if not candidates:
+                continue
+            
+            motion_real = self._resolve_id(motion_slot)
+            for slot_id in candidates:
+                slot_real = self._resolve_id(slot_id)
+                if not slot_real or not motion_real:
+                    continue
+                await self.client.update_slot(slot_real, parent=motion_real)
 
     def _snap_position_for_grounding(self, name, position, scale):
         """Snap floor/slab positions to avoid floating gaps when near ground."""

@@ -191,6 +191,49 @@ class ResoniteLinkClient:
         }
         
         return await self.send_command(command)
+
+    async def update_slot(self, slot_id, parent=None, position=None, rotation=None, scale=None, name=None):
+        """Update an existing slot (e.g., reparent or move).
+        
+        Args:
+            slot_id: ID of the slot to update
+            parent: Optional new parent slot ID
+            position: Optional [x, y, z] position
+            rotation: Optional [x, y, z, w] quaternion rotation
+            scale: Optional [x, y, z] scale
+            name: Optional new name
+        
+        Returns:
+            dict: Response from server
+        """
+        data = {"id": slot_id}
+        
+        if parent is not None:
+            data["parent"] = {"$type": "reference", "targetId": parent}
+        if name is not None:
+            data["name"] = {"$type": "string", "value": name}
+        if position is not None:
+            data["position"] = {
+                "$type": "float3",
+                "value": {"x": position[0], "y": position[1], "z": position[2]}
+            }
+        if scale is not None:
+            data["scale"] = {
+                "$type": "float3",
+                "value": {"x": scale[0], "y": scale[1], "z": scale[2]}
+            }
+        if rotation is not None:
+            data["rotation"] = {
+                "$type": "floatQ",
+                "value": {"x": rotation[0], "y": rotation[1], "z": rotation[2], "w": rotation[3] if len(rotation) > 3 else 1.0}
+            }
+        
+        command = {
+            "$type": "updateSlot",
+            "data": data
+        }
+        
+        return await self.send_command(command)
     
     async def add_component(self, slot_id, component_type, component_id=None, members=None):
         """Add a component to a slot.
