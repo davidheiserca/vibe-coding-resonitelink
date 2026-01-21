@@ -111,11 +111,12 @@ class ResoniteLinkClient:
                 return placeholder
         return placeholder
     
-    async def send_command(self, command):
+    async def send_command(self, command, timeout=None):
         """Send a command and wait for response.
         
         Args:
             command: Command dictionary
+            timeout: Optional timeout override in seconds
         
         Returns:
             dict: Response from server
@@ -129,16 +130,15 @@ class ResoniteLinkClient:
         await self.ws.send(json.dumps(command))
         
         try:
-            response_text = await asyncio.wait_for(
-                self.ws.recv(),
-                timeout=self.command_timeout
-            )
+            wait_timeout = self.command_timeout if timeout is None else timeout
+            response_text = await asyncio.wait_for(self.ws.recv(), timeout=wait_timeout)
             response = json.loads(response_text)
             self.logger.log_json("RECEIVED:", response)
             return response
         
         except asyncio.TimeoutError:
-            self.logger.log_error(f"Command timed out after {self.command_timeout} seconds")
+            wait_timeout = self.command_timeout if timeout is None else timeout
+            self.logger.log_error(f"Command timed out after {wait_timeout} seconds")
             return {"success": False, "errorInfo": "Timeout"}
         
         except Exception as e:
@@ -326,7 +326,7 @@ class ResoniteLinkClient:
             "$type": "getUsers"
         }
         
-        response = await self.send_command(command)
+        response = await self.send_command(command, timeout=30)
         
         if response.get("success", False):
             users = response.get("users", [])
@@ -351,3 +351,29 @@ class ResoniteLinkClient:
         
         self.logger.log_warning("Could not find user slot, using Root")
         return "Root"
+
+    async def get_local_user_info(self):
+        """Get the local user's name and host status if available."""
+        command = {
+            "$type": "getUsers"
+        }
+        response = await self.send_command(command, timeout=30)
+        if response.get("success", False):
+            users = response.get("users", [])
+            for user in users:
+                if user.get("isLocal", False):
+                    name = (
+                        user.get("username")
+                        or user.get("userName")
+                        or user.get("displayName")
+                        or user.get("name")
+                        or user.get("userId")
+                        or "Unknown User"
+                    )
+                    is_host = bool(
+                        user.get("isHost")
+                        or user.get("isWorldHost")
+                        or user.get("host")
+                    )
+                    return {"name": name, "is_host": is_host}
+        return {"name": "Unknown User", "is_host": False}

@@ -21,12 +21,21 @@ COMPONENTS = {
     "bevel_box": "[FrooxEngine]FrooxEngine.BevelBoxMesh",
     "quad": "[FrooxEngine]FrooxEngine.QuadMesh",
     "triangle": "[FrooxEngine]FrooxEngine.TriangleMesh",
+    "icosphere": "[FrooxEngine]FrooxEngine.IcoSphereMesh",
+    "cross": "[FrooxEngine]FrooxEngine.CrossMesh",
     
     # Rendering
     "material": "[FrooxEngine]FrooxEngine.PBS_Metallic",
     "material_metallic": "[FrooxEngine]FrooxEngine.PBS_Metallic",
     "material_specular": "[FrooxEngine]FrooxEngine.PBS_Specular",
+    "material_rim": "[FrooxEngine]FrooxEngine.PBS_RimMetallic",
     "unlit_material": "[FrooxEngine]FrooxEngine.UnlitMaterial",
+    "fresnel_material": "[FrooxEngine]FrooxEngine.FresnelMaterial",
+    "overlay_fresnel_material": "[FrooxEngine]FrooxEngine.OverlayFresnelMaterial",
+    "text_unlit_material": "[FrooxEngine]FrooxEngine.TextUnlitMaterial",
+    "ui_unlit_material": "[FrooxEngine]FrooxEngine.UI_UnlitMaterial",
+    "ui_text_unlit_material": "[FrooxEngine]FrooxEngine.UI_TextUnlitMaterial",
+    "wireframe_material": "[FrooxEngine]FrooxEngine.WireframeMaterial",
     "renderer": "[FrooxEngine]FrooxEngine.MeshRenderer",
     "mesh_renderer": "[FrooxEngine]FrooxEngine.MeshRenderer",
     
@@ -54,6 +63,12 @@ COMPONENTS = {
     # Metadata
     "comment": "[FrooxEngine]FrooxEngine.Comment",
     "license": "[FrooxEngine]FrooxEngine.License",
+
+    # ProtoFlux (experimental)
+    "protoflux_node_visual": "[FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxNodeVisual",
+    "protoflux_node_debug": "[FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxNodeDebugInfo",
+    "protoflux_wire_manager": "[FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxWireManager",
+    "protoflux_arrow_manager": "[FrooxEngine]FrooxEngine.ProtofluxArrowManager",
 }
 
 
@@ -66,6 +81,7 @@ ENUMS = {
     "BlendMode": ["Opaque", "Cutout", "Alpha"],
     "ShadowCastMode": ["Off", "On", "TwoSided", "ShadowsOnly"],
     "Sidedness": ["Auto", "Front", "Back", "Double"],
+    "WireType": ["Input", "Output", "Reference"],
 }
 
 
@@ -112,6 +128,13 @@ COMPONENT_FIELDS = {
         "credit": "CreditString",       # string
         "require_credit": "RequireCredit", # bool
         "can_export": "CanExport",      # bool
+    },
+    "protoflux_wire_manager": {
+        "connect_point": "ConnectPoint",  # reference (slot)
+        "type": "Type",                   # enum WireType
+        "width": "Width",                 # float
+        "start_color": "StartColor",      # colorX
+        "end_color": "EndColor",          # colorX
     },
 }
 
