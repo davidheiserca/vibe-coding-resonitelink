@@ -53,6 +53,7 @@ BASE_SYSTEM_PROMPT = '''GLOBAL RULES (always follow):
 - Optimize the scene by reusing meshes/prefabs and minimizing unique parts to improve performance.
 - Use level-of-detail (LOD) principles: simplify small or distant elements to reduce complexity.
 - Prefer simple, clean geometry; avoid excessive detail unless explicitly requested.
+- For any rotating or oscillating objects (fans, windmills, antennas, spotlights), group moving parts under a single parent slot and attach Spinner/Wiggler to that parent so the whole assembly moves correctly.
 '''
 
 
