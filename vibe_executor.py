@@ -30,10 +30,22 @@ LICENSE_TEXT = "This asset is licensed under CC BY-SA 4.0 © 2026 Dave the Turne
 
 
 # ============================================================
+# GLOBAL PROMPT RULES - Always applied to Claude
+# ============================================================
+
+BASE_SYSTEM_PROMPT = '''GLOBAL RULES (always follow):
+- Avoid floating objects. Everything must rest on ground, a platform, or a support.
+- If something is elevated, add explicit supports (legs, columns, brackets, etc.).
+- Use clear, specific sizes and positions for every part.
+- Keep scale reasonable unless the user explicitly asks for extreme scale.
+'''
+
+
+# ============================================================
 # PLANNING PROMPT - High-level structure decomposition
 # ============================================================
 
-PLANNING_PROMPT = '''You are a Resonite world builder planning assistant. Your job is to break down complex building requests into manageable sub-structures with PRECISE DIMENSIONS.
+PLANNING_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder planning assistant. Your job is to break down complex building requests into manageable sub-structures with PRECISE DIMENSIONS.
 
 CRITICAL: You must specify exact dimensions and coordinates so all parts align perfectly.
 
@@ -154,6 +166,7 @@ RULES:
 5. Use SINGLE boxes for solid walls, only split for openings
 6. Window/door openings must be FULLY CONTAINED within wall bounds (not at edges)
 7. All sub-structures in same build MUST use consistent dimensions
+8. No floating parts: every sub-structure must sit on the ground or another part
 
 Respond with ONLY a JSON object.
 '''
@@ -163,7 +176,7 @@ Respond with ONLY a JSON object.
 # DETAIL PROMPT - Build commands for a single sub-structure
 # ============================================================
 
-DETAIL_PROMPT = '''You are a Resonite world builder assistant. Generate ResoniteLink commands for ONE sub-structure.
+DETAIL_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder assistant. Generate ResoniteLink commands for ONE sub-structure.
 
 CONTEXT:
 - You are building a part of a larger structure
@@ -178,6 +191,7 @@ CONSTRUCTION RULES (CRITICAL):
 3. Boxes must BUTT at seams (share edges), never overlap
 4. Use the EXACT position and scale from the description
 5. All parts of a wall with opening must have SAME thickness and material
+6. No floating geometry: if a part is elevated, add support elements
 
 CREATING A WALL WITH AN OPENING (e.g., window or door):
 - For a wall with a centered rectangular opening, create boxes for:
@@ -269,7 +283,7 @@ Respond with ONLY a JSON object:
 # SIMPLE BUILD PROMPT - For non-complex single objects
 # ============================================================
 
-SIMPLE_PROMPT = '''You are a Resonite world builder assistant. You generate ResoniteLink commands to create 3D objects.
+SIMPLE_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder assistant. You generate ResoniteLink commands to create 3D objects.
 
 COMMAND TYPES:
 1. addSlot - Create a new slot (object container)
