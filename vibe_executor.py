@@ -36,6 +36,7 @@ LICENSE_TEXT = "This asset is licensed under CC BY-SA 4.0 © 2026 Dave the Turne
 BASE_SYSTEM_PROMPT = '''GLOBAL RULES (always follow):
 - Avoid floating objects. Everything must rest on the ground, a platform, or a support.
 - If something is elevated, add explicit supports (legs, columns, brackets, etc.).
+- Expand high-level requests into a complete, well-connected build plan with explicit sizes and positions.
 - Use clear, specific sizes and positions for every part (prefer standard modular dimensions).
 - Keep scale reasonable unless the user explicitly asks for extreme scale.
 - Align parts precisely: no gaps or overlaps at seams; corners and joints meet cleanly.
@@ -183,6 +184,7 @@ RULES:
 8. Always include a ground/base slab for scenes (thin box at Y=0)
 9. No floating parts: if anything is above Y=0.1, it must have explicit supports
 10. For repeated elements (trees, lamps, etc.), cap each cluster at 3 items
+11. Floor plates must sit flush on their support (no gaps). If on slab at Y=0, floor bottom must be Y=0.
 
 Respond with ONLY a JSON object. Do NOT wrap in code fences.
 '''
@@ -210,6 +212,7 @@ CONSTRUCTION RULES (CRITICAL):
 6. Avoid floating geometry: if a part is elevated, add supports
 7. If this is a scene area, add a ground/base slab first and place all parts on it
 8. For repeated elements (trees, streetlights, etc.), cap at 3 items per cluster
+9. Floors/plates must sit flush on their supports (no air gap). If ground-level, bottom at Y=0.
 
 CREATING A WALL WITH AN OPENING (e.g., window or door):
 - For a wall with a centered rectangular opening, create boxes for:
@@ -923,6 +926,39 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
     def _resolve_id(self, placeholder):
         """Resolve placeholder to real ID."""
         return self.client.resolve_id(placeholder)
+
+    def _snap_position_for_grounding(self, name, position, scale):
+        """Snap floor/slab positions to avoid floating gaps when near ground."""
+        if not scale or not isinstance(scale, (list, tuple)) or len(scale) < 2:
+            return position
+        if not name:
+            return position
+        try:
+            y = position[1]
+            thickness = float(scale[1])
+        except Exception:
+            return position
+        
+        lower = name.lower()
+        is_roof = "roof" in lower
+        is_base = any(token in lower for token in ["base", "foundation", "ground"])
+        is_slab = "slab" in lower
+        is_floor = "floor" in lower or "floorplate" in lower or "floor_plate" in lower
+        is_deck = "deck" in lower or "platform" in lower
+        
+        # Only snap if already near ground level
+        if abs(y) > max(thickness, 0.5):
+            return position
+        
+        # Base slabs: top surface at Y=0
+        if is_slab and is_base and not is_roof:
+            return [position[0], -thickness / 2.0, position[2]]
+        
+        # Floor plates/decks at ground level: bottom at Y=0
+        if (is_floor or is_deck) and not is_roof:
+            return [position[0], thickness / 2.0, position[2]]
+        
+        return position
     
     def _resolve_refs_in_obj(self, obj):
         """Recursively resolve references in an object."""
@@ -973,6 +1009,9 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
         scale = cmd.get("scale")
         rotation = cmd.get("rotation")
         name = cmd.get("name", "AIObject")
+        
+        # Hard rule: snap grounded slabs/floors to avoid tiny gaps
+        position = self._snap_position_for_grounding(name, position, scale)
         
         # Handle parent - use default_parent if provided and no explicit parent
         # Fall back to spawn_parent (user's location) instead of Root
