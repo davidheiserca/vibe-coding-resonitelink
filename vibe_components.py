@@ -72,6 +72,7 @@ ENUMS = {
     "BlendMode": ["Opaque", "Cutout", "Alpha"],
     "ShadowCastMode": ["Off", "On", "TwoSided", "ShadowsOnly"],
     "Sidedness": ["Auto", "Front", "Back", "Double"],
+    "WireType": ["Input", "Output", "Reference"],
 }
 
 
@@ -118,6 +119,13 @@ COMPONENT_FIELDS = {
         "credit": "CreditString",       # string
         "require_credit": "RequireCredit", # bool
         "can_export": "CanExport",      # bool
+    },
+    "protoflux_wire_manager": {
+        "connect_point": "ConnectPoint",  # reference (slot)
+        "type": "Type",                   # enum WireType
+        "width": "Width",                 # float
+        "start_color": "StartColor",      # colorX
+        "end_color": "EndColor",          # colorX
     },
 }
 

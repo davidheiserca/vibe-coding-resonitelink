@@ -242,6 +242,16 @@ LIGHT COMPONENT:
 - [FrooxEngine]FrooxEngine.Light
   Fields: LightType (enum: Point/Spot/Directional), Intensity (float), Color (colorX), Range (float)
 
+ANIMATION COMPONENTS:
+- [FrooxEngine]FrooxEngine.Spinner (fields: _speed as float3 - degrees/sec)
+- [FrooxEngine]FrooxEngine.Wiggler (fields: _speed, _magnitude as float3)
+- [FrooxEngine]FrooxEngine.Wobbler (fields: _speed, _magnitude as float)
+
+PROTOFLUX VISUALS (EXPERIMENTAL):
+- Use [FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxWireManager to draw flow wires.
+- For angled/clean paths, add intermediate anchor slots and chain wire segments.
+- Set ConnectPoint (reference to target slot), Type (Input/Output/Reference), Width, StartColor, EndColor.
+
 TYPE FORMATS:
 - colorX: {"$type": "colorX", "value": {"r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0, "profile": "sRGB"}}
 - float3: {"$type": "float3", "value": {"x": 0, "y": 90, "z": 0}}
@@ -342,6 +352,11 @@ ANIMATION COMPONENTS:
 - [FrooxEngine]FrooxEngine.Wiggler (fields: _speed, _magnitude as float3)
 - [FrooxEngine]FrooxEngine.Wobbler (fields: _speed, _magnitude as float)
 
+PROTOFLUX VISUALS (EXPERIMENTAL):
+- Use [FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxWireManager to draw flow wires.
+- For angled/clean paths, add intermediate anchor slots and chain wire segments.
+- Set ConnectPoint (reference to target slot), Type (Input/Output/Reference), Width, StartColor, EndColor.
+
 LIGHT COMPONENT:
 - [FrooxEngine]FrooxEngine.Light
   Fields: LightType (enum: Point/Spot/Directional), Intensity (float), Color (colorX), Range (float)
@@ -418,7 +433,8 @@ class AIBuildExecutor:
             'village', 'city', 'forest', 'garden', 'park', 'street',
             'castle', 'tower', 'bridge', 'ship', 'vehicle', 'car',
             'furniture set', 'kitchen', 'bedroom', 'living room', 'office',
-            'playground', 'stage', 'arena', 'stadium', 'complex'
+            'playground', 'stage', 'arena', 'stadium', 'complex',
+            'protoflux', 'flux', 'node graph'
         ]
     
     def _is_complex_request(self, prompt):
