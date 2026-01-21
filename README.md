@@ -45,7 +45,6 @@ The ResoniteLink AI Asset Creator is a natural language interface for creating 3
    ```bash
    pip install anthropic websockets
    ```
-   Note: Some distros require a virtual environment. If you see an "externally-managed-environment" error, use `python -m venv .venv` and activate it first. In fish, activation is `source .venv/bin/activate.fish`.
 
 2. **Configure the application:**
    - Copy `resonite_builder.conf.example` to `resonite_builder.conf`
@@ -82,7 +81,6 @@ The ResoniteLink AI Asset Creator is a natural language interface for creating 3
 ```bash
 pip install anthropic websockets
 ```
-Note: If your distro blocks system-wide installs (PEP 668), create a venv with `python -m venv .venv` and activate it before installing. In fish, use `source .venv/bin/activate.fish`.
 
 ### Resonite Requirements
 - You must be the **host** of the session
@@ -99,7 +97,6 @@ Note: If your distro blocks system-wide installs (PEP 668), create a venv with `
    ```bash
    pip install anthropic websockets
    ```
-   Note: If your distro blocks system-wide installs (PEP 668), create a venv with `python -m venv .venv` and activate it first. In fish, use `source .venv/bin/activate.fish`.
 
 3. **Create configuration file:**
    ```bash
