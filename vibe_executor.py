@@ -34,11 +34,25 @@ LICENSE_TEXT = "This asset is licensed under CC BY-SA 4.0 © 2026 Dave the Turne
 # ============================================================
 
 BASE_SYSTEM_PROMPT = '''GLOBAL RULES (always follow):
-- Avoid floating objects. Everything must rest on ground, a platform, or a support.
+- Avoid floating objects. Everything must rest on the ground, a platform, or a support.
 - If something is elevated, add explicit supports (legs, columns, brackets, etc.).
-- Use clear, specific sizes and positions for every part.
+- Use clear, specific sizes and positions for every part (prefer standard modular dimensions).
 - Keep scale reasonable unless the user explicitly asks for extreme scale.
+- Align parts precisely: no gaps or overlaps at seams; corners and joints meet cleanly.
+- Ensure upper floors and roofs are supported by walls or columns underneath; avoid large unsupported spans or overhangs.
+- Use consistent human-scale proportions (e.g. doors ~2m tall, ceilings ~3m, railings ~1m).
+- Favor modular pieces and reuse them across the scene for consistency and to minimize unique parts.
+- For repetition, describe a pattern or grid (specify count and spacing) instead of listing every item.
+- Include circulation for multi-level builds (stairs, ramps, ladders) and put guardrails on any open edges.
+- Enclose interior spaces with complete floors, walls, and ceilings (no open gaps).
+- Openings (doors, windows) must be properly sized and framed, fitting within walls without weakening the structure.
+- Add beams, trusses, or thicker supports for large spans (e.g. long bridges or wide roofs) and substantial overhangs.
+- Keep a cohesive design style and material palette across the build.
+- Optimize the scene by reusing meshes/prefabs and minimizing unique parts to improve performance.
+- Use level-of-detail (LOD) principles: simplify small or distant elements to reduce complexity.
+- Prefer simple, clean geometry; avoid excessive detail unless explicitly requested.
 '''
+
 
 
 # ============================================================
