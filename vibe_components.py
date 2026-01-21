@@ -21,12 +21,21 @@ COMPONENTS = {
     "bevel_box": "[FrooxEngine]FrooxEngine.BevelBoxMesh",
     "quad": "[FrooxEngine]FrooxEngine.QuadMesh",
     "triangle": "[FrooxEngine]FrooxEngine.TriangleMesh",
+    "icosphere": "[FrooxEngine]FrooxEngine.IcoSphereMesh",
+    "cross": "[FrooxEngine]FrooxEngine.CrossMesh",
     
     # Rendering
     "material": "[FrooxEngine]FrooxEngine.PBS_Metallic",
     "material_metallic": "[FrooxEngine]FrooxEngine.PBS_Metallic",
     "material_specular": "[FrooxEngine]FrooxEngine.PBS_Specular",
+    "material_rim": "[FrooxEngine]FrooxEngine.PBS_RimMetallic",
     "unlit_material": "[FrooxEngine]FrooxEngine.UnlitMaterial",
+    "fresnel_material": "[FrooxEngine]FrooxEngine.FresnelMaterial",
+    "overlay_fresnel_material": "[FrooxEngine]FrooxEngine.OverlayFresnelMaterial",
+    "text_unlit_material": "[FrooxEngine]FrooxEngine.TextUnlitMaterial",
+    "ui_unlit_material": "[FrooxEngine]FrooxEngine.UI_UnlitMaterial",
+    "ui_text_unlit_material": "[FrooxEngine]FrooxEngine.UI_TextUnlitMaterial",
+    "wireframe_material": "[FrooxEngine]FrooxEngine.WireframeMaterial",
     "renderer": "[FrooxEngine]FrooxEngine.MeshRenderer",
     "mesh_renderer": "[FrooxEngine]FrooxEngine.MeshRenderer",
     

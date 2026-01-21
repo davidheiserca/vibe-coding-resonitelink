@@ -229,13 +229,23 @@ COMMAND TYPES:
 MESH COMPONENTS (use full names):
 - [FrooxEngine]FrooxEngine.BoxMesh
 - [FrooxEngine]FrooxEngine.SphereMesh
+- [FrooxEngine]FrooxEngine.IcoSphereMesh
 - [FrooxEngine]FrooxEngine.CylinderMesh
 - [FrooxEngine]FrooxEngine.ConeMesh
 - [FrooxEngine]FrooxEngine.CapsuleMesh
 - [FrooxEngine]FrooxEngine.TorusMesh
+- [FrooxEngine]FrooxEngine.CrossMesh
 
 RENDERING COMPONENTS:
 - [FrooxEngine]FrooxEngine.PBS_Metallic (standard material)
+- [FrooxEngine]FrooxEngine.PBS_RimMetallic
+- [FrooxEngine]FrooxEngine.FresnelMaterial
+- [FrooxEngine]FrooxEngine.OverlayFresnelMaterial
+- [FrooxEngine]FrooxEngine.UnlitMaterial
+- [FrooxEngine]FrooxEngine.TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_UnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.WireframeMaterial
 - [FrooxEngine]FrooxEngine.MeshRenderer
 
 LIGHT COMPONENT:
@@ -327,16 +337,26 @@ COMMAND TYPES:
 MESH COMPONENTS (use full names):
 - [FrooxEngine]FrooxEngine.BoxMesh
 - [FrooxEngine]FrooxEngine.SphereMesh
+- [FrooxEngine]FrooxEngine.IcoSphereMesh
 - [FrooxEngine]FrooxEngine.CylinderMesh
 - [FrooxEngine]FrooxEngine.ConeMesh
 - [FrooxEngine]FrooxEngine.CapsuleMesh
 - [FrooxEngine]FrooxEngine.TorusMesh
 - [FrooxEngine]FrooxEngine.BevelBoxMesh
 - [FrooxEngine]FrooxEngine.QuadMesh
+- [FrooxEngine]FrooxEngine.CrossMesh
 
 RENDERING COMPONENTS:
 - [FrooxEngine]FrooxEngine.PBS_Metallic (standard material)
+- [FrooxEngine]FrooxEngine.PBS_RimMetallic
+- [FrooxEngine]FrooxEngine.FresnelMaterial
+- [FrooxEngine]FrooxEngine.OverlayFresnelMaterial
 - [FrooxEngine]FrooxEngine.MeshRenderer
+- [FrooxEngine]FrooxEngine.UnlitMaterial
+- [FrooxEngine]FrooxEngine.TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_UnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.WireframeMaterial
 
 PHYSICS COMPONENTS:
 - [FrooxEngine]FrooxEngine.BoxCollider
