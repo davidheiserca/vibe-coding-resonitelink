@@ -54,6 +54,12 @@ COMPONENTS = {
     # Metadata
     "comment": "[FrooxEngine]FrooxEngine.Comment",
     "license": "[FrooxEngine]FrooxEngine.License",
+
+    # ProtoFlux (experimental)
+    "protoflux_node_visual": "[FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxNodeVisual",
+    "protoflux_node_debug": "[FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxNodeDebugInfo",
+    "protoflux_wire_manager": "[FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxWireManager",
+    "protoflux_arrow_manager": "[FrooxEngine]FrooxEngine.ProtofluxArrowManager",
 }
 
 
