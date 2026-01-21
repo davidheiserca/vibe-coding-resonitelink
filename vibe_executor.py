@@ -49,6 +49,7 @@ BASE_SYSTEM_PROMPT = '''GLOBAL RULES (always follow):
 - Openings (doors, windows) must be properly sized and framed, fitting within walls without weakening the structure.
 - Add beams, trusses, or thicker supports for large spans (e.g. long bridges or wide roofs) and substantial overhangs.
 - Keep a cohesive design style and material palette across the build.
+- Use at least two accent colors plus a neutral base (avoid monochrome scenes).
 - Optimize the scene by reusing meshes/prefabs and minimizing unique parts to improve performance.
 - Use level-of-detail (LOD) principles: simplify small or distant elements to reduce complexity.
 - Prefer simple, clean geometry; avoid excessive detail unless explicitly requested.
@@ -185,6 +186,7 @@ RULES:
 9. No floating parts: if anything is above Y=0.1, it must have explicit supports
 10. For repeated elements (trees, lamps, etc.), cap each cluster at 3 items
 11. Floor plates must sit flush on their support (no gaps). If on slab at Y=0, floor bottom must be Y=0.
+12. Bridges must be clear-span between buildings (no intersections with walls); place bridge decks offset outward from facades.
 
 Respond with ONLY a JSON object. Do NOT wrap in code fences.
 '''
