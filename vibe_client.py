@@ -351,3 +351,29 @@ class ResoniteLinkClient:
         
         self.logger.log_warning("Could not find user slot, using Root")
         return "Root"
+
+    async def get_local_user_info(self):
+        """Get the local user's name and host status if available."""
+        command = {
+            "$type": "getUsers"
+        }
+        response = await self.send_command(command)
+        if response.get("success", False):
+            users = response.get("users", [])
+            for user in users:
+                if user.get("isLocal", False):
+                    name = (
+                        user.get("username")
+                        or user.get("userName")
+                        or user.get("displayName")
+                        or user.get("name")
+                        or user.get("userId")
+                        or "Unknown User"
+                    )
+                    is_host = bool(
+                        user.get("isHost")
+                        or user.get("isWorldHost")
+                        or user.get("host")
+                    )
+                    return {"name": name, "is_host": is_host}
+        return {"name": "Unknown User", "is_host": False}

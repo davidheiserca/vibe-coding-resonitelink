@@ -30,10 +30,36 @@ LICENSE_TEXT = "This asset is licensed under CC BY-SA 4.0 © 2026 Dave the Turne
 
 
 # ============================================================
+# GLOBAL PROMPT RULES - Always applied to Claude
+# ============================================================
+
+BASE_SYSTEM_PROMPT = '''GLOBAL RULES (always follow):
+- Avoid floating objects. Everything must rest on the ground, a platform, or a support.
+- If something is elevated, add explicit supports (legs, columns, brackets, etc.).
+- Use clear, specific sizes and positions for every part (prefer standard modular dimensions).
+- Keep scale reasonable unless the user explicitly asks for extreme scale.
+- Align parts precisely: no gaps or overlaps at seams; corners and joints meet cleanly.
+- Ensure upper floors and roofs are supported by walls or columns underneath; avoid large unsupported spans or overhangs.
+- Use consistent human-scale proportions (e.g. doors ~2m tall, ceilings ~3m, railings ~1m).
+- Favor modular pieces and reuse them across the scene for consistency and to minimize unique parts.
+- For repetition, describe a pattern or grid (specify count and spacing) instead of listing every item.
+- Include circulation for multi-level builds (stairs, ramps, ladders) and put guardrails on any open edges.
+- Enclose interior spaces with complete floors, walls, and ceilings (no open gaps).
+- Openings (doors, windows) must be properly sized and framed, fitting within walls without weakening the structure.
+- Add beams, trusses, or thicker supports for large spans (e.g. long bridges or wide roofs) and substantial overhangs.
+- Keep a cohesive design style and material palette across the build.
+- Optimize the scene by reusing meshes/prefabs and minimizing unique parts to improve performance.
+- Use level-of-detail (LOD) principles: simplify small or distant elements to reduce complexity.
+- Prefer simple, clean geometry; avoid excessive detail unless explicitly requested.
+'''
+
+
+
+# ============================================================
 # PLANNING PROMPT - High-level structure decomposition
 # ============================================================
 
-PLANNING_PROMPT = '''You are a Resonite world builder planning assistant. Your job is to break down complex building requests into manageable sub-structures with PRECISE DIMENSIONS.
+PLANNING_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder planning assistant. Your job is to break down complex building requests into manageable sub-structures with PRECISE DIMENSIONS.
 
 CRITICAL: You must specify exact dimensions and coordinates so all parts align perfectly.
 
@@ -154,8 +180,11 @@ RULES:
 5. Use SINGLE boxes for solid walls, only split for openings
 6. Window/door openings must be FULLY CONTAINED within wall bounds (not at edges)
 7. All sub-structures in same build MUST use consistent dimensions
+8. Always include a ground/base slab for scenes (thin box at Y=0)
+9. No floating parts: if anything is above Y=0.1, it must have explicit supports
+10. For repeated elements (trees, lamps, etc.), cap each cluster at 3 items
 
-Respond with ONLY a JSON object.
+Respond with ONLY a JSON object. Do NOT wrap in code fences.
 '''
 
 
@@ -163,7 +192,7 @@ Respond with ONLY a JSON object.
 # DETAIL PROMPT - Build commands for a single sub-structure
 # ============================================================
 
-DETAIL_PROMPT = '''You are a Resonite world builder assistant. Generate ResoniteLink commands for ONE sub-structure.
+DETAIL_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder assistant. Generate ResoniteLink commands for ONE sub-structure.
 
 CONTEXT:
 - You are building a part of a larger structure
@@ -178,6 +207,9 @@ CONSTRUCTION RULES (CRITICAL):
 3. Boxes must BUTT at seams (share edges), never overlap
 4. Use the EXACT position and scale from the description
 5. All parts of a wall with opening must have SAME thickness and material
+6. Avoid floating geometry: if a part is elevated, add supports
+7. If this is a scene area, add a ground/base slab first and place all parts on it
+8. For repeated elements (trees, streetlights, etc.), cap at 3 items per cluster
 
 CREATING A WALL WITH AN OPENING (e.g., window or door):
 - For a wall with a centered rectangular opening, create boxes for:
@@ -260,7 +292,11 @@ Wall: 4m wide, 3m tall, 0.1m thick. Door: 1m wide, 2.2m tall, centered.
   ... (mesh, mat, renderer for $SUB_SLOT_3) ...
 ]
 
-Respond with ONLY a JSON object:
+Keep the output concise. If the command list would be too long, reduce repetition (fewer trees, fewer repeated elements) to keep the JSON valid and complete.
+
+Avoid floating parts: everything must sit on ground or on a support. If elevated, add supports.
+
+Respond with ONLY a JSON object (no code fences):
 {"sub_name": "...", "commands": [...]}
 '''
 
@@ -269,7 +305,7 @@ Respond with ONLY a JSON object:
 # SIMPLE BUILD PROMPT - For non-complex single objects
 # ============================================================
 
-SIMPLE_PROMPT = '''You are a Resonite world builder assistant. You generate ResoniteLink commands to create 3D objects.
+SIMPLE_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder assistant. You generate ResoniteLink commands to create 3D objects.
 
 COMMAND TYPES:
 1. addSlot - Create a new slot (object container)
@@ -353,7 +389,7 @@ EXAMPLE - Red spinning box:
   {"cmd": "updateComponent", "id": "$COMP_MAT", "members": {"AlbedoColor": {"$type": "colorX", "value": {"r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0, "profile": "sRGB"}}}}
 ]
 
-Respond with ONLY a JSON object:
+Respond with ONLY a JSON object (no code fences):
 {"plan": "brief description", "commands": [...]}
 '''
 
@@ -418,14 +454,20 @@ class AIBuildExecutor:
         """
         self.logger.log_prompt(prompt)
         
-        # Generate comment text with timestamp
-        timestamp = datetime.datetime.now().strftime("%y%m%d %H%M")
-        self.comment_text = f"{timestamp} Created by Dave the Turner using Vibe Coded ResoniteLink. Prompt: {prompt}"
-        
-        # Get the user's parent slot to place content near the user
+        # Get local user info for attribution and parent slot
         self.logger.log("Finding user location...")
+        user_info = await self.client.get_local_user_info()
         self.spawn_parent = await self.client.get_user_root()
         self.logger.log(f"Will spawn content under: {self.spawn_parent}")
+        
+        # Generate comment text with timestamp and local user attribution
+        timestamp = datetime.datetime.now().strftime("%y%m%d %H%M")
+        host_tag = " (host)" if user_info.get("is_host") else ""
+        creator = f"{user_info.get('name', 'Unknown User')}{host_tag}"
+        self.comment_text = (
+            f"{timestamp} Created by {creator} using Vibe Coded ResoniteLink. "
+            f"Prompt: {prompt}"
+        )
         
         # Decide which building approach to use
         if self._is_complex_request(prompt):
@@ -616,13 +658,25 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
             try:
                 detail_response = self.anthropic.messages.create(
                     model=self.model,
-                    max_tokens=4096,
+                    max_tokens=8192,
                     system=DETAIL_PROMPT,
                     messages=[{"role": "user", "content": detail_prompt}]
                 )
                 
                 detail_content = detail_response.content[0].text
                 detail_data = self._parse_json_response(detail_content)
+                
+                if not detail_data:
+                    self.logger.log_warning(f"Retrying detail prompt for {sub_name} with strict JSON")
+                    retry_prompt = detail_prompt + "\nReturn ONLY valid JSON. Do not use code fences. If too long, reduce repetition."
+                    detail_response = self.anthropic.messages.create(
+                        model=self.model,
+                        max_tokens=8192,
+                        system=DETAIL_PROMPT,
+                        messages=[{"role": "user", "content": retry_prompt}]
+                    )
+                    detail_content = detail_response.content[0].text
+                    detail_data = self._parse_json_response(detail_content)
                 
                 if detail_data:
                     commands = detail_data.get("commands", [])
@@ -714,21 +768,76 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
         Returns:
             dict: Parsed JSON or None if parsing failed
         """
-        start = content.find("{")
-        end = content.rfind("}") + 1
-        if start >= 0 and end > start:
-            json_str = content[start:end]
-            try:
-                return json.loads(json_str)
-            except json.JSONDecodeError as e:
-                self.logger.log_error(f"JSON parse error: {e}")
-                self.logger.log(f"Raw AI response:\n{content}")
-                self._save_debug_json(content)
-                return None
-        else:
-            self.logger.log_error("Failed to find JSON in AI response")
-            self.logger.log(f"Raw AI response:\n{content}")
+        parsed = self._try_parse_json(content)
+        if parsed is not None:
+            return parsed
+        
+        self.logger.log_error("Failed to parse JSON in AI response")
+        self.logger.log(f"Raw AI response:\n{content}")
+        self._save_debug_json(content)
+        return None
+    
+    def _try_parse_json(self, content):
+        """Best-effort JSON parsing with code-fence stripping and recovery."""
+        cleaned = self._strip_code_fences(content)
+        start = cleaned.find("{")
+        if start < 0:
             return None
+        
+        decoder = json.JSONDecoder()
+        try:
+            obj, _ = decoder.raw_decode(cleaned[start:])
+            return obj
+        except json.JSONDecodeError:
+            trimmed = self._trim_to_balanced_json(cleaned[start:])
+            if not trimmed:
+                return None
+            try:
+                return json.loads(trimmed)
+            except json.JSONDecodeError:
+                return None
+    
+    def _strip_code_fences(self, content):
+        """Remove markdown code fences if present."""
+        text = content.strip()
+        fence_start = text.find("```")
+        if fence_start == -1:
+            return text
+        
+        fence_end = text.find("```", fence_start + 3)
+        if fence_end == -1:
+            return text
+        
+        fenced = text[fence_start + 3:fence_end].strip()
+        if fenced.startswith("json"):
+            fenced = fenced[4:].strip()
+        return fenced
+    
+    def _trim_to_balanced_json(self, text):
+        """Trim to the first fully balanced JSON object."""
+        depth = 0
+        in_string = False
+        escape = False
+        for i, ch in enumerate(text):
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == "\\":
+                    escape = True
+                elif ch == "\"":
+                    in_string = False
+                continue
+            
+            if ch == "\"":
+                in_string = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[:i + 1]
+        
+        return None
     
     async def execute_commands(self, commands):
         """Execute a list of commands.
