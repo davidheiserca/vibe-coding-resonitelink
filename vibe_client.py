@@ -111,11 +111,12 @@ class ResoniteLinkClient:
                 return placeholder
         return placeholder
     
-    async def send_command(self, command):
+    async def send_command(self, command, timeout=None):
         """Send a command and wait for response.
         
         Args:
             command: Command dictionary
+            timeout: Optional timeout override in seconds
         
         Returns:
             dict: Response from server
@@ -129,16 +130,15 @@ class ResoniteLinkClient:
         await self.ws.send(json.dumps(command))
         
         try:
-            response_text = await asyncio.wait_for(
-                self.ws.recv(),
-                timeout=self.command_timeout
-            )
+            wait_timeout = self.command_timeout if timeout is None else timeout
+            response_text = await asyncio.wait_for(self.ws.recv(), timeout=wait_timeout)
             response = json.loads(response_text)
             self.logger.log_json("RECEIVED:", response)
             return response
         
         except asyncio.TimeoutError:
-            self.logger.log_error(f"Command timed out after {self.command_timeout} seconds")
+            wait_timeout = self.command_timeout if timeout is None else timeout
+            self.logger.log_error(f"Command timed out after {wait_timeout} seconds")
             return {"success": False, "errorInfo": "Timeout"}
         
         except Exception as e:
@@ -187,6 +187,49 @@ class ResoniteLinkClient:
         
         command = {
             "$type": "addSlot",
+            "data": data
+        }
+        
+        return await self.send_command(command)
+
+    async def update_slot(self, slot_id, parent=None, position=None, rotation=None, scale=None, name=None):
+        """Update an existing slot (e.g., reparent or move).
+        
+        Args:
+            slot_id: ID of the slot to update
+            parent: Optional new parent slot ID
+            position: Optional [x, y, z] position
+            rotation: Optional [x, y, z, w] quaternion rotation
+            scale: Optional [x, y, z] scale
+            name: Optional new name
+        
+        Returns:
+            dict: Response from server
+        """
+        data = {"id": slot_id}
+        
+        if parent is not None:
+            data["parent"] = {"$type": "reference", "targetId": parent}
+        if name is not None:
+            data["name"] = {"$type": "string", "value": name}
+        if position is not None:
+            data["position"] = {
+                "$type": "float3",
+                "value": {"x": position[0], "y": position[1], "z": position[2]}
+            }
+        if scale is not None:
+            data["scale"] = {
+                "$type": "float3",
+                "value": {"x": scale[0], "y": scale[1], "z": scale[2]}
+            }
+        if rotation is not None:
+            data["rotation"] = {
+                "$type": "floatQ",
+                "value": {"x": rotation[0], "y": rotation[1], "z": rotation[2], "w": rotation[3] if len(rotation) > 3 else 1.0}
+            }
+        
+        command = {
+            "$type": "updateSlot",
             "data": data
         }
         
@@ -326,7 +369,7 @@ class ResoniteLinkClient:
             "$type": "getUsers"
         }
         
-        response = await self.send_command(command)
+        response = await self.send_command(command, timeout=30)
         
         if response.get("success", False):
             users = response.get("users", [])
@@ -351,3 +394,29 @@ class ResoniteLinkClient:
         
         self.logger.log_warning("Could not find user slot, using Root")
         return "Root"
+
+    async def get_local_user_info(self):
+        """Get the local user's name and host status if available."""
+        command = {
+            "$type": "getUsers"
+        }
+        response = await self.send_command(command, timeout=30)
+        if response.get("success", False):
+            users = response.get("users", [])
+            for user in users:
+                if user.get("isLocal", False):
+                    name = (
+                        user.get("username")
+                        or user.get("userName")
+                        or user.get("displayName")
+                        or user.get("name")
+                        or user.get("userId")
+                        or "Unknown User"
+                    )
+                    is_host = bool(
+                        user.get("isHost")
+                        or user.get("isWorldHost")
+                        or user.get("host")
+                    )
+                    return {"name": name, "is_host": is_host}
+        return {"name": "Unknown User", "is_host": False}

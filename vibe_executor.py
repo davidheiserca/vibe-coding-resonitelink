@@ -30,10 +30,39 @@ LICENSE_TEXT = "This asset is licensed under CC BY-SA 4.0 © 2026 Dave the Turne
 
 
 # ============================================================
+# GLOBAL PROMPT RULES - Always applied to Claude
+# ============================================================
+
+BASE_SYSTEM_PROMPT = '''GLOBAL RULES (always follow):
+- Avoid floating objects. Everything must rest on the ground, a platform, or a support.
+- If something is elevated, add explicit supports (legs, columns, brackets, etc.).
+- Expand high-level requests into a complete, well-connected build plan with explicit sizes and positions.
+- Use clear, specific sizes and positions for every part (prefer standard modular dimensions).
+- Keep scale reasonable unless the user explicitly asks for extreme scale.
+- Align parts precisely: no gaps or overlaps at seams; corners and joints meet cleanly.
+- Ensure upper floors and roofs are supported by walls or columns underneath; avoid large unsupported spans or overhangs.
+- Use consistent human-scale proportions (e.g. doors ~2m tall, ceilings ~3m, railings ~1m).
+- Favor modular pieces and reuse them across the scene for consistency and to minimize unique parts.
+- For repetition, describe a pattern or grid (specify count and spacing) instead of listing every item.
+- Include circulation for multi-level builds (stairs, ramps, ladders) and put guardrails on any open edges.
+- Enclose interior spaces with complete floors, walls, and ceilings (no open gaps).
+- Openings (doors, windows) must be properly sized and framed, fitting within walls without weakening the structure.
+- Add beams, trusses, or thicker supports for large spans (e.g. long bridges or wide roofs) and substantial overhangs.
+- Keep a cohesive design style and material palette across the build.
+- Use at least two accent colors plus a neutral base (avoid monochrome scenes).
+- Optimize the scene by reusing meshes/prefabs and minimizing unique parts to improve performance.
+- Use level-of-detail (LOD) principles: simplify small or distant elements to reduce complexity.
+- Prefer simple, clean geometry; avoid excessive detail unless explicitly requested.
+- For any rotating or oscillating objects (fans, windmills, antennas, spotlights), group moving parts under a single parent slot and attach Spinner/Wiggler to that parent so the whole assembly moves correctly.
+'''
+
+
+
+# ============================================================
 # PLANNING PROMPT - High-level structure decomposition
 # ============================================================
 
-PLANNING_PROMPT = '''You are a Resonite world builder planning assistant. Your job is to break down complex building requests into manageable sub-structures with PRECISE DIMENSIONS.
+PLANNING_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder planning assistant. Your job is to break down complex building requests into manageable sub-structures with PRECISE DIMENSIONS.
 
 CRITICAL: You must specify exact dimensions and coordinates so all parts align perfectly.
 
@@ -154,8 +183,13 @@ RULES:
 5. Use SINGLE boxes for solid walls, only split for openings
 6. Window/door openings must be FULLY CONTAINED within wall bounds (not at edges)
 7. All sub-structures in same build MUST use consistent dimensions
+8. Always include a ground/base slab for scenes (thin box at Y=0)
+9. No floating parts: if anything is above Y=0.1, it must have explicit supports
+10. For repeated elements (trees, lamps, etc.), cap each cluster at 3 items
+11. Floor plates must sit flush on their support (no gaps). If on slab at Y=0, floor bottom must be Y=0.
+12. Bridges must be clear-span without intersecting other geometry; if between buildings, offset decks outward from facades, and if over terrain/water, add piers/supports to the ground.
 
-Respond with ONLY a JSON object.
+Respond with ONLY a JSON object. Do NOT wrap in code fences.
 '''
 
 
@@ -163,7 +197,7 @@ Respond with ONLY a JSON object.
 # DETAIL PROMPT - Build commands for a single sub-structure
 # ============================================================
 
-DETAIL_PROMPT = '''You are a Resonite world builder assistant. Generate ResoniteLink commands for ONE sub-structure.
+DETAIL_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder assistant. Generate ResoniteLink commands for ONE sub-structure.
 
 CONTEXT:
 - You are building a part of a larger structure
@@ -178,6 +212,10 @@ CONSTRUCTION RULES (CRITICAL):
 3. Boxes must BUTT at seams (share edges), never overlap
 4. Use the EXACT position and scale from the description
 5. All parts of a wall with opening must have SAME thickness and material
+6. Avoid floating geometry: if a part is elevated, add supports
+7. If this is a scene area, add a ground/base slab first and place all parts on it
+8. For repeated elements (trees, streetlights, etc.), cap at 3 items per cluster
+9. Floors/plates must sit flush on their supports (no air gap). If ground-level, bottom at Y=0.
 
 CREATING A WALL WITH AN OPENING (e.g., window or door):
 - For a wall with a centered rectangular opening, create boxes for:
@@ -197,18 +235,38 @@ COMMAND TYPES:
 MESH COMPONENTS (use full names):
 - [FrooxEngine]FrooxEngine.BoxMesh
 - [FrooxEngine]FrooxEngine.SphereMesh
+- [FrooxEngine]FrooxEngine.IcoSphereMesh
 - [FrooxEngine]FrooxEngine.CylinderMesh
 - [FrooxEngine]FrooxEngine.ConeMesh
 - [FrooxEngine]FrooxEngine.CapsuleMesh
 - [FrooxEngine]FrooxEngine.TorusMesh
+- [FrooxEngine]FrooxEngine.CrossMesh
 
 RENDERING COMPONENTS:
 - [FrooxEngine]FrooxEngine.PBS_Metallic (standard material)
+- [FrooxEngine]FrooxEngine.PBS_RimMetallic
+- [FrooxEngine]FrooxEngine.FresnelMaterial
+- [FrooxEngine]FrooxEngine.OverlayFresnelMaterial
+- [FrooxEngine]FrooxEngine.UnlitMaterial
+- [FrooxEngine]FrooxEngine.TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_UnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.WireframeMaterial
 - [FrooxEngine]FrooxEngine.MeshRenderer
 
 LIGHT COMPONENT:
 - [FrooxEngine]FrooxEngine.Light
   Fields: LightType (enum: Point/Spot/Directional), Intensity (float), Color (colorX), Range (float)
+
+ANIMATION COMPONENTS:
+- [FrooxEngine]FrooxEngine.Spinner (fields: _speed as float3 - degrees/sec)
+- [FrooxEngine]FrooxEngine.Wiggler (fields: _speed, _magnitude as float3)
+- [FrooxEngine]FrooxEngine.Wobbler (fields: _speed, _magnitude as float)
+
+PROTOFLUX VISUALS (EXPERIMENTAL):
+- Use [FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxWireManager to draw flow wires.
+- For angled/clean paths, add intermediate anchor slots and chain wire segments.
+- Set ConnectPoint (reference to target slot), Type (Input/Output/Reference), Width, StartColor, EndColor.
 
 TYPE FORMATS:
 - colorX: {"$type": "colorX", "value": {"r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0, "profile": "sRGB"}}
@@ -260,7 +318,11 @@ Wall: 4m wide, 3m tall, 0.1m thick. Door: 1m wide, 2.2m tall, centered.
   ... (mesh, mat, renderer for $SUB_SLOT_3) ...
 ]
 
-Respond with ONLY a JSON object:
+Keep the output concise. If the command list would be too long, reduce repetition (fewer trees, fewer repeated elements) to keep the JSON valid and complete.
+
+Avoid floating parts: everything must sit on ground or on a support. If elevated, add supports.
+
+Respond with ONLY a JSON object (no code fences):
 {"sub_name": "...", "commands": [...]}
 '''
 
@@ -269,7 +331,7 @@ Respond with ONLY a JSON object:
 # SIMPLE BUILD PROMPT - For non-complex single objects
 # ============================================================
 
-SIMPLE_PROMPT = '''You are a Resonite world builder assistant. You generate ResoniteLink commands to create 3D objects.
+SIMPLE_PROMPT = BASE_SYSTEM_PROMPT + '''You are a Resonite world builder assistant. You generate ResoniteLink commands to create 3D objects.
 
 COMMAND TYPES:
 1. addSlot - Create a new slot (object container)
@@ -281,16 +343,26 @@ COMMAND TYPES:
 MESH COMPONENTS (use full names):
 - [FrooxEngine]FrooxEngine.BoxMesh
 - [FrooxEngine]FrooxEngine.SphereMesh
+- [FrooxEngine]FrooxEngine.IcoSphereMesh
 - [FrooxEngine]FrooxEngine.CylinderMesh
 - [FrooxEngine]FrooxEngine.ConeMesh
 - [FrooxEngine]FrooxEngine.CapsuleMesh
 - [FrooxEngine]FrooxEngine.TorusMesh
 - [FrooxEngine]FrooxEngine.BevelBoxMesh
 - [FrooxEngine]FrooxEngine.QuadMesh
+- [FrooxEngine]FrooxEngine.CrossMesh
 
 RENDERING COMPONENTS:
 - [FrooxEngine]FrooxEngine.PBS_Metallic (standard material)
+- [FrooxEngine]FrooxEngine.PBS_RimMetallic
+- [FrooxEngine]FrooxEngine.FresnelMaterial
+- [FrooxEngine]FrooxEngine.OverlayFresnelMaterial
 - [FrooxEngine]FrooxEngine.MeshRenderer
+- [FrooxEngine]FrooxEngine.UnlitMaterial
+- [FrooxEngine]FrooxEngine.TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_UnlitMaterial
+- [FrooxEngine]FrooxEngine.UI_TextUnlitMaterial
+- [FrooxEngine]FrooxEngine.WireframeMaterial
 
 PHYSICS COMPONENTS:
 - [FrooxEngine]FrooxEngine.BoxCollider
@@ -305,6 +377,11 @@ ANIMATION COMPONENTS:
 - [FrooxEngine]FrooxEngine.Spinner (fields: _speed as float3 - degrees/sec)
 - [FrooxEngine]FrooxEngine.Wiggler (fields: _speed, _magnitude as float3)
 - [FrooxEngine]FrooxEngine.Wobbler (fields: _speed, _magnitude as float)
+
+PROTOFLUX VISUALS (EXPERIMENTAL):
+- Use [FrooxEngine]FrooxEngine.ProtoFlux.ProtoFluxWireManager to draw flow wires.
+- For angled/clean paths, add intermediate anchor slots and chain wire segments.
+- Set ConnectPoint (reference to target slot), Type (Input/Output/Reference), Width, StartColor, EndColor.
 
 LIGHT COMPONENT:
 - [FrooxEngine]FrooxEngine.Light
@@ -353,7 +430,7 @@ EXAMPLE - Red spinning box:
   {"cmd": "updateComponent", "id": "$COMP_MAT", "members": {"AlbedoColor": {"$type": "colorX", "value": {"r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0, "profile": "sRGB"}}}}
 ]
 
-Respond with ONLY a JSON object:
+Respond with ONLY a JSON object (no code fences):
 {"plan": "brief description", "commands": [...]}
 '''
 
@@ -382,7 +459,8 @@ class AIBuildExecutor:
             'village', 'city', 'forest', 'garden', 'park', 'street',
             'castle', 'tower', 'bridge', 'ship', 'vehicle', 'car',
             'furniture set', 'kitchen', 'bedroom', 'living room', 'office',
-            'playground', 'stage', 'arena', 'stadium', 'complex'
+            'playground', 'stage', 'arena', 'stadium', 'complex',
+            'protoflux', 'flux', 'node graph'
         ]
     
     def _is_complex_request(self, prompt):
@@ -418,14 +496,20 @@ class AIBuildExecutor:
         """
         self.logger.log_prompt(prompt)
         
-        # Generate comment text with timestamp
-        timestamp = datetime.datetime.now().strftime("%y%m%d %H%M")
-        self.comment_text = f"{timestamp} Created by Dave the Turner using Vibe Coded ResoniteLink. Prompt: {prompt}"
-        
-        # Get the user's parent slot to place content near the user
+        # Get local user info for attribution and parent slot
         self.logger.log("Finding user location...")
+        user_info = await self.client.get_local_user_info()
         self.spawn_parent = await self.client.get_user_root()
         self.logger.log(f"Will spawn content under: {self.spawn_parent}")
+        
+        # Generate comment text with timestamp and local user attribution
+        timestamp = datetime.datetime.now().strftime("%y%m%d %H%M")
+        host_tag = " (host)" if user_info.get("is_host") else ""
+        creator = f"{user_info.get('name', 'Unknown User')}{host_tag}"
+        self.comment_text = (
+            f"{timestamp} Created by {creator} using Vibe Coded ResoniteLink. "
+            f"Prompt: {prompt}"
+        )
         
         # Decide which building approach to use
         if self._is_complex_request(prompt):
@@ -616,13 +700,25 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
             try:
                 detail_response = self.anthropic.messages.create(
                     model=self.model,
-                    max_tokens=4096,
+                    max_tokens=8192,
                     system=DETAIL_PROMPT,
                     messages=[{"role": "user", "content": detail_prompt}]
                 )
                 
                 detail_content = detail_response.content[0].text
                 detail_data = self._parse_json_response(detail_content)
+                
+                if not detail_data:
+                    self.logger.log_warning(f"Retrying detail prompt for {sub_name} with strict JSON")
+                    retry_prompt = detail_prompt + "\nReturn ONLY valid JSON. Do not use code fences. If too long, reduce repetition."
+                    detail_response = self.anthropic.messages.create(
+                        model=self.model,
+                        max_tokens=8192,
+                        system=DETAIL_PROMPT,
+                        messages=[{"role": "user", "content": retry_prompt}]
+                    )
+                    detail_content = detail_response.content[0].text
+                    detail_data = self._parse_json_response(detail_content)
                 
                 if detail_data:
                     commands = detail_data.get("commands", [])
@@ -704,6 +800,12 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
             
             except Exception as e:
                 self.logger.log_error(f"Command execution error: {e}")
+
+        # Post-pass: group moving parts under spinner/wiggler/wobbler slots
+        try:
+            await self._reparent_motion_groups(commands)
+        except Exception as e:
+            self.logger.log_warning(f"Motion grouping failed: {e}")
     
     def _parse_json_response(self, content):
         """Parse JSON from AI response.
@@ -714,21 +816,76 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
         Returns:
             dict: Parsed JSON or None if parsing failed
         """
-        start = content.find("{")
-        end = content.rfind("}") + 1
-        if start >= 0 and end > start:
-            json_str = content[start:end]
-            try:
-                return json.loads(json_str)
-            except json.JSONDecodeError as e:
-                self.logger.log_error(f"JSON parse error: {e}")
-                self.logger.log(f"Raw AI response:\n{content}")
-                self._save_debug_json(content)
-                return None
-        else:
-            self.logger.log_error("Failed to find JSON in AI response")
-            self.logger.log(f"Raw AI response:\n{content}")
+        parsed = self._try_parse_json(content)
+        if parsed is not None:
+            return parsed
+        
+        self.logger.log_error("Failed to parse JSON in AI response")
+        self.logger.log(f"Raw AI response:\n{content}")
+        self._save_debug_json(content)
+        return None
+    
+    def _try_parse_json(self, content):
+        """Best-effort JSON parsing with code-fence stripping and recovery."""
+        cleaned = self._strip_code_fences(content)
+        start = cleaned.find("{")
+        if start < 0:
             return None
+        
+        decoder = json.JSONDecoder()
+        try:
+            obj, _ = decoder.raw_decode(cleaned[start:])
+            return obj
+        except json.JSONDecodeError:
+            trimmed = self._trim_to_balanced_json(cleaned[start:])
+            if not trimmed:
+                return None
+            try:
+                return json.loads(trimmed)
+            except json.JSONDecodeError:
+                return None
+    
+    def _strip_code_fences(self, content):
+        """Remove markdown code fences if present."""
+        text = content.strip()
+        fence_start = text.find("```")
+        if fence_start == -1:
+            return text
+        
+        fence_end = text.find("```", fence_start + 3)
+        if fence_end == -1:
+            return text
+        
+        fenced = text[fence_start + 3:fence_end].strip()
+        if fenced.startswith("json"):
+            fenced = fenced[4:].strip()
+        return fenced
+    
+    def _trim_to_balanced_json(self, text):
+        """Trim to the first fully balanced JSON object."""
+        depth = 0
+        in_string = False
+        escape = False
+        for i, ch in enumerate(text):
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == "\\":
+                    escape = True
+                elif ch == "\"":
+                    in_string = False
+                continue
+            
+            if ch == "\"":
+                in_string = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[:i + 1]
+        
+        return None
     
     async def execute_commands(self, commands):
         """Execute a list of commands.
@@ -778,6 +935,105 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
     def _resolve_id(self, placeholder):
         """Resolve placeholder to real ID."""
         return self.client.resolve_id(placeholder)
+
+    def _collect_slots(self, commands):
+        """Collect slot metadata from command list."""
+        slots = {}
+        for cmd in commands:
+            if cmd.get("cmd") != "addSlot":
+                continue
+            slot_id = cmd.get("id")
+            if not slot_id:
+                continue
+            slots[slot_id] = {
+                "name": cmd.get("name", ""),
+                "parent": cmd.get("parent"),
+            }
+        return slots
+
+    def _collect_motion_controllers(self, commands):
+        """Collect slots that have spinner/wiggler/wobbler components."""
+        motion_slots = set()
+        for cmd in commands:
+            if cmd.get("cmd") != "addComponent":
+                continue
+            comp_type = cmd.get("type", "") or ""
+            if comp_type.endswith("Spinner") or comp_type.endswith("Wiggler") or comp_type.endswith("Wobbler"):
+                slot_id = cmd.get("slot")
+                if slot_id:
+                    motion_slots.add(slot_id)
+        return motion_slots
+
+    def _is_motion_candidate(self, name):
+        if not name:
+            return False
+        lower = name.lower()
+        keywords = [
+            "blade", "fan", "rotor", "prop", "propeller", "windmill",
+            "spotlight", "lightbeam", "beam", "antenna", "dish", "arm",
+            "turret", "radar", "vane"
+        ]
+        return any(keyword in lower for keyword in keywords)
+
+    async def _reparent_motion_groups(self, commands):
+        """Reparent motion-related slots under the slot with the motion component."""
+        slots = self._collect_slots(commands)
+        motion_slots = self._collect_motion_controllers(commands)
+        if not motion_slots:
+            return
+        
+        for motion_slot in motion_slots:
+            motion_parent = slots.get(motion_slot, {}).get("parent")
+            if not motion_parent:
+                continue
+            candidates = [
+                slot_id for slot_id, meta in slots.items()
+                if slot_id != motion_slot
+                and meta.get("parent") == motion_parent
+                and self._is_motion_candidate(meta.get("name", ""))
+            ]
+            if not candidates:
+                continue
+            
+            motion_real = self._resolve_id(motion_slot)
+            for slot_id in candidates:
+                slot_real = self._resolve_id(slot_id)
+                if not slot_real or not motion_real:
+                    continue
+                await self.client.update_slot(slot_real, parent=motion_real)
+
+    def _snap_position_for_grounding(self, name, position, scale):
+        """Snap floor/slab positions to avoid floating gaps when near ground."""
+        if not scale or not isinstance(scale, (list, tuple)) or len(scale) < 2:
+            return position
+        if not name:
+            return position
+        try:
+            y = position[1]
+            thickness = float(scale[1])
+        except Exception:
+            return position
+        
+        lower = name.lower()
+        is_roof = "roof" in lower
+        is_base = any(token in lower for token in ["base", "foundation", "ground"])
+        is_slab = "slab" in lower
+        is_floor = "floor" in lower or "floorplate" in lower or "floor_plate" in lower
+        is_deck = "deck" in lower or "platform" in lower
+        
+        # Only snap if already near ground level
+        if abs(y) > max(thickness, 0.5):
+            return position
+        
+        # Base slabs: top surface at Y=0
+        if is_slab and is_base and not is_roof:
+            return [position[0], -thickness / 2.0, position[2]]
+        
+        # Floor plates/decks at ground level: bottom at Y=0
+        if (is_floor or is_deck) and not is_roof:
+            return [position[0], thickness / 2.0, position[2]]
+        
+        return position
     
     def _resolve_refs_in_obj(self, obj):
         """Recursively resolve references in an object."""
@@ -828,6 +1084,9 @@ Generate the commands to build this. The parent slot ID is $PARENT (already crea
         scale = cmd.get("scale")
         rotation = cmd.get("rotation")
         name = cmd.get("name", "AIObject")
+        
+        # Hard rule: snap grounded slabs/floors to avoid tiny gaps
+        position = self._snap_position_for_grounding(name, position, scale)
         
         # Handle parent - use default_parent if provided and no explicit parent
         # Fall back to spawn_parent (user's location) instead of Root
